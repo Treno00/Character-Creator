@@ -1,4 +1,4 @@
-<h1>AI Character Creator</h1>
+<h1>Character Creator</h1>
 <img src="https://img.shields.io/github/license/Treno00/Character-Creator"></img>
 
 ---
