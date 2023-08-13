@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Character Creation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #2B3035;
+        }
+        #main-container {
+            max-width: 960px;
+            margin: auto;
+            padding: 20px;
+            background: #212529;
+            box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.1);
+            align-items: center;
+        }
+
+        h1, h2, h5 {
+            color: #A0B5BD;
+        }
+        #toggle-nsfw {
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            border: 0;
+            margin-bottom: 20px;
+        }
+        #up{
+            background: #333;
+            color: #fff;
+
+        }
+        
+        .checkbox-columns {
+            columns: 6; /* Adjust this number to change the number of columns */
+            padding: 20px 0;
+        }
+
+        .checkbox-columns div {
+            margin-bottom: 5px;
+            background: #212529;
+            color: #A0B5BD;
+        }
+
+        .NSFW {
+            color: rgb(196, 73, 73);
+        }
+        select {
+            background: #2B3035;
+            color: #A0B5BD;
+            width: 100%;
+            padding: 5px 20px;
+            text-align: center;
+            border: 0;
+        }
+        #display-all {
+            background: rgb(10, 124, 25);
+            color: #fff;
+            padding: 5px 20px;
+            border: 0;
+        }
+        .hidden {
+            display: none;
+        }
+        #scenario-description {
+            background: #212529;
+            color: #A0B5BD;
+
+        }
+        #add-dialogue-entry {
+            background: rgb(52, 24, 211);
+            color: #fff;
+            padding: 5px 20px;
+            border: 0;
+        }
+        #remove-dialogue-entry{
+            background: rgb(204, 49, 49);
+            color: #fff;
+            padding: 5px 20px;
+            border: 0;
+        }
+        #save-png, #save-json {
+            background: green;
+            color: #fff;
+            padding: 10px 20px;
+            border: 0;
+        }
+
+        .text-input, .dialogue-message {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #2B3035;
+            color: #A0B5BD;
+            box-sizing: border-box;
+        }
+        .traits-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .trait-item {
+            padding: 5px 10px;
+            border-radius: 5px;
+            background: #2B3035;
+            color: #A0B5BD;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .remove-trait {
+            margin-left: 10px;
+            color: rgb(196, 73, 73);
+            cursor: pointer;
+        }
+
+        #tooltip {
+            display: none;
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-size: 14px;
+            max-width: 300px;
+        }
+        footer {
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        footer a{
+            color: #fff;
+        }
+    </style>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.10.2/Sortable.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="scripts/personalities.js"></script>
+    <script src="scripts/scenarios.js"></script>
+</head>
+<body>
+    <div id="main-container">
+        <div id="tooltip"></div>
+        <button id="up" style="display:block;width:150px; height:30px;" onclick="document.getElementById('load').click()">Upload Character</button>
+        <center><h1 id="title">Character Creation</h1></center>
+        <center><canvas id="canvas" width="0" height="0"></canvas></center>
+        <center><button id="toggle-nsfw">Show/Hide NSFW</button></center>
+        
+        <input id="load" type="file" accept="image/png" style="display:none">
+        <label><h2>1. Name:</h2>
+        <input id="name" type="text" class="text-input" placeholder="(enter character name)"/></label>
+    
+        <h2>2. Personality:</h2>
+        <input id="search" type="text" class="text-input" placeholder="(search personalities)"/></label>
+        <button id="display-all" class="show-all">Display personalities</button>
+        <div id="personality-list" class="checkbox-columns">
+            <!-- Personality checkboxes are generated here -->
+        </div>
+
+        <h2>3. Add Custom Trait:</h2>
+        <input type="text" id="custom-trait-input" class="text-input" placeholder="(enter custom trait and press Enter)" />
+        
+        <h2>4. Personality Traits:</h2>
+        <h5>(rearrange traits: first are more important than last)</h5>
+        <div id="personality-traits" class="traits-container"></div>
+    
+        <h2>5. Scenario:</h2>
+        <select id="scenario-select">
+            <!-- Scenario options are generated here -->
+        </select>
+        <textarea id="scenario-description" class="text-input" style="height: 150px"></textarea>
+
+        <h2>6. First Message:</h2>
+        <textarea id="first-message" class="text-input" placeholder="(this will be displayed as a first message)" style="height: 130px;"></textarea>
+
+        <h2>7. Example Dialogues:</h2>
+        <div id="dialogue-entries">
+            <!-- Dialogue entries are generated here -->
+        </div>
+        <button id="add-dialogue-entry">Add Dialogue</button>
+        <button id="remove-dialogue-entry">Remove Dialogue</button>
+        <br><br><center><button id="save-png" style="display:none">Save as PNG</button> <button id="save-json">Save as JSON</button></center>
+
+        
+    <footer>
+    <p>Created by: <a href="https://github.com/Treno00">Treno00</a></p>
+    <p>v1.0</p>
+    <p>PNG modifications from: <a href="https://github.com/ZoltanAI">ZoltanAI</a></p> 
+    </footer>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/combine/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js,npm/crc-32@1.2,gh/syonfox/GPT-3-Encoder@c3c2e2533a15645d812b5e6fcb00b75b74718161/browser.min.js"></script>
+    <script>
+        var searchText = "";
+        var hideAll = true;
+        var checkboxStates = {};
+        var customTraits = [];
+        var usedTraits = [];
+        var originalNSFWState = $("#toggle-nsfw").hasClass("show-nsfw");
+
+        function setVisibility(hideAll){
+            var $personalities = $(".personality-wrapper");
+            if (hideAll) {
+                $personalities.filter(":not(:has(:checked))").hide();
+            } else {
+                $personalities.show();
+            }
+        }
+        function updatePersonalityList() {
+            var showNSFW = $("#toggle-nsfw").hasClass("show-nsfw");
+        
+            // Update checkbox states before clearing
+            $(".personality").each(function() {
+                checkboxStates[this.id] = this.checked;
+            });
+        
+            var personalityList = $("#personality-list");
+            personalityList.empty();
+            searchText = $("#search").val().toLowerCase();
+        
+            var checkedElements = '';
+            var matchedElements = '';
+            var unmatchedElements = '';
+        
+
+            for (var key in personalities) {
+                var isChecked = checkboxStates[key] ? 'checked' : '';
+                var element = '<div class="personality-wrapper">';
+                    element += '<input type="checkbox" class="personality" id="' + key + '" ' + isChecked + ' onchange="updatePersonalityList()">';
+                element += '<label for="' + key + '">' + key + '</label>';
+                element += '</div>';
+        
+                if (checkboxStates[key]) {
+                    checkedElements += element;
+                } else if (key.toLowerCase().startsWith(searchText)) {
+                    matchedElements += element;
+                } else {
+                    unmatchedElements += element;
+                }
+            }
+            
+            for (var key in personalitiesNSFW) {
+                var isChecked = checkboxStates[key] ? 'checked' : '';
+                var element = '<div class="personality-wrapper">';
+                    element += '<input type="checkbox" class="personality NSFW" id="' + key + '" ' + isChecked + ' onchange="updatePersonalityList()">';
+                element += '<label class="NSFW" for="' + key + '">' + key + '</label>';
+                element += '</div>';
+        
+                if (showNSFW) {
+                    if (checkboxStates[key]) {
+                        checkedElements += element;
+                    } else if (key.toLowerCase().startsWith(searchText)) {
+                        matchedElements += element;
+                    } else {
+                        unmatchedElements += element;
+                    }
+                } else {
+
+                    if (checkboxStates[key]) {
+                        checkedElements += element;
+                    }
+                }
+            }
+            // Append the checked elements first, then the matched, then the unmatched
+            personalityList.append(checkedElements);
+            personalityList.append(matchedElements);
+            $("#tooltip").hide();
+            if(searchText == "") setVisibility(hideAll);
+        }
+        function updateScenarioList() {
+            var showNSFW = $("#toggle-nsfw").hasClass("show-nsfw");
+        
+            var scenarioSelect = $("#scenario-select");
+            scenarioSelect.empty();
+            for (var key in scenarios) {
+                scenarioSelect.append('<option value="' + scenarios[key] + '">' + key + '</option>');
+            }
+        
+            if (showNSFW) {
+                for (var key in scenariosNSFW) {
+                    scenarioSelect.append('<option class="NSFW" value="' + scenariosNSFW[key] + '">' + key + '</option>');
+                }
+            }
+        }
+        function updateDetails() {
+            var traits = [];
+            usedTraits = [];
+            var existingTraits = new Set(); // Set to store existing traits
+            $(".personality:checked").each(function() {
+                var personality = $(this).attr('id');
+                if (personality in personalities) {
+                    traits = traits.concat(personalities[personality]);
+                }
+                if (personality in personalitiesNSFW) {
+                    traits = traits.concat(personalitiesNSFW[personality]);
+                }
+            });
+        
+            var details = $(".detail-input").map(function() {
+                return this.value ? this.value : null;
+            }).get().filter(Boolean);
+        
+            traits = traits.concat(details);
+        
+            // Add custom traits
+            traits = traits.concat(customTraits);
+        
+            var traitList = $("#personality-traits");
+            traitList.empty();
+        
+            traits.forEach(function(trait) {
+                if (!existingTraits.has(trait)) { // Check if trait already exists
+                    existingTraits.add(trait); // Add trait to the set of existing traits
+                    usedTraits.push(trait);
+                    traitList.append('<div class="trait-item">' + trait + '<span class="remove-trait" onclick="removeTrait(this)">[x]</span></div>');
+                }
+            });
+
+            //traits.forEach(function(trait) {
+            //    if(!customTraits.has(trait)){
+            //        if (!existingTraits.has(trait)) { // Check if trait already exists
+            //            existingTraits.add(trait); // Add trait to the set of existing traits
+            //            traitList.append('<div class="trait-item">' + trait + '<span class="remove-trait" onclick="removeTrait(this)">[x]</span></div>');
+            //        }
+            //    }
+            //});
+        }
+        function removeTrait(element) {
+            var traitToRemove = $(element).parent().text().replace('[x]', '').trim();
+            // remove trait from custom traits list
+            var index = customTraits.indexOf(traitToRemove);
+            if (index !== -1) {
+                customTraits.splice(index, 1);
+            }
+            $(element).parent().remove();
+            updateScenario();
+        }
+        function updateScenario() {
+            var selectedScenario = $("#scenario-select").val();
+            var name = $("#name").val();
+            var scenarioDescription = selectedScenario.replace(/\[Name\]/g, name);
+            $("#scenario-description").val(scenarioDescription);
+            
+        }
+        function getPersonalityDescription() {
+            // Get all checked personality checkboxes
+            var checkedBoxes = document.querySelectorAll('.personality:checked');
+        
+            // Create an array to store the personality values
+            var personalityValues = [];
+        
+            // Loop through the checked boxes and add the id (which is the personality) to the array
+            for (var i = 0; i < checkedBoxes.length; i++) {
+                personalityValues.push(checkedBoxes[i].id);
+            }
+        
+            // Form the sentence based on the number of personalities
+            var personalityString;
+            if (personalityValues.length === 0) {
+                personalityString = "I am person";
+            } else if (personalityValues.length === 1) {
+                personalityString = "I am " + personalityValues[0] + " person";
+            } else if (personalityValues.length === 2) {
+                personalityString = "I am " + personalityValues.join(" and ") + " person";
+            } else {
+                personalityString = "I am " + personalityValues.slice(0, -1).join(", ") + " and " + personalityValues.slice(-1) + " person";
+            }
+        
+            // Return the sentence
+            return personalityString;
+        }
+        function addDialogueEntry() {
+            var name = $("#name").val();
+        
+            var dialogueEntry = '<div class="dialogue-entry">';
+            dialogueEntry += '<select class="dialogue-who"><option value="' + name + '">' + name + '</option><option value="You">You</option></select>: ';
+            dialogueEntry += '<input type="text" class="dialogue-message" />';
+            dialogueEntry += '<select class="dialogue-who"><option value="You">You</option><option value="' + name + '">' + name + '</option></select>: ';
+            dialogueEntry += '<input type="text" class="dialogue-message" />';
+            dialogueEntry += '</div>';
+        
+            $("#dialogue-entries").append(dialogueEntry);
+        }
+        function removeDialogueEntry() {
+            $("#dialogue-entries .dialogue-entry").last().remove();
+        }
+        function addCustomTrait(customTrait) {
+            var existingTraits = $("#personality-traits .trait-item").map(function() { return $(this).text().replace('[x]', '').trim(); }).get();
+            if (existingTraits.includes(customTrait)) {
+                alert('This trait already exists.');
+                return;
+            }
+            customTraits.push(customTrait); // add the custom trait to the list
+            var traitList = $("#personality-traits");
+            traitList.append('<div class="trait-item">' + customTrait + '<span class="remove-trait" onclick="removeTrait(this)">[x]</span></div>');
+        }
+        function loadCustomTrait(customTrait) {
+            var existingTraits = $("#personality-traits .trait-item").map(function() { return $(this).text().replace('[x]', '').trim(); }).get();
+            if (existingTraits.includes(customTrait)) {
+                return;
+            }
+            customTraits.push(customTrait); // add the custom trait to the list
+            var traitList = $("#personality-traits");
+            traitList.append('<div class="trait-item">' + customTrait + '<span class="remove-trait" onclick="removeTrait(this)">[x]</span></div>');
+        }
+        // Event handlers
+        $(document).ready(function() {
+            setVisibility(true);
+            updatePersonalityList();
+        });
+        $(document).on("change", ".personality", updateDetails);
+        $(document).on("change", ".detail-input", updateDetails);
+        $(document).on("change", ".dialogue-who", function() {
+            var otherDropdown = $(this).siblings(".dialogue-who");
+        
+            if ($(this).val() === $("#name").val()) {
+                otherDropdown.val("You");
+            } else {
+                otherDropdown.val($("#name").val());
+            }
+        });
+        $("#name").on("input", function() {
+            var name = $(this).val();
+        
+            $(".dialogue-who option").each(function() {
+                if ($(this).val() !== "You") {
+                    $(this).val(name);
+                    $(this).text(name);
+                }
+            });
+        
+            updateScenario();
+        });
+        $("#display-all").click(function() {
+            if(hideAll){
+                $(this).css("background", "red");
+                $(this).text("Hide personalities");
+            } else {
+                $(this).css("background", "rgb(10, 124, 25)");
+                $(this).text("Display personalities");
+            }
+            hideAll = !hideAll;
+            if(searchText == "") {
+                setVisibility(hideAll);
+            }
+        });
+        $("#search").on('input', function() {
+            searchText = $("#search").val().toLowerCase();
+            updatePersonalityList();
+            if(searchText == ""){
+                setVisibility(hideAll);
+            }
+        });
+        $("#scenario-select").on("change", updateScenario);
+        $("#add-dialogue-entry").click(addDialogueEntry);
+        $("#remove-dialogue-entry").click(removeDialogueEntry);
+        $("#toggle-nsfw").click(function() {
+            $(this).toggleClass("show-nsfw");
+            updatePersonalityList();
+            updateScenarioList();
+        });
+        $("#personality-list").on("mouseenter", ".personality-wrapper", function(e) {
+            var personality = $(this).find('.personality').attr('id');
+            var traits = [];
+            if (personality in personalities) {
+                traits = traits.concat(personalities[personality]);
+            }
+            if (personality in personalitiesNSFW) {
+                traits = traits.concat(personalitiesNSFW[personality]);
+            }
+        
+            var tooltip = $("#tooltip");
+            tooltip.text(traits.join(", "));
+            tooltip.css({
+                left: e.pageX,
+                top: e.pageY,
+            });
+            tooltip.show();
+        });
+        $("#personality-list").on("mousemove", ".personality-wrapper", function(e) {
+            var tooltip = $("#tooltip");
+            tooltip.css({
+                left: e.pageX + 10,  // The "+ 10" offsets the tooltip a bit to avoid it being under the cursor
+                top: e.pageY + 10,   // Adjust these values as needed
+            });
+        });
+        $("#personality-list").on("mouseleave", ".personality-wrapper", function() {
+            $("#tooltip").hide();
+        });
+        $("#custom-trait-input").on("keyup", function (e) {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                var customTrait = $(this).val().trim();
+                if (customTrait) {
+                    // The function addCustomTrait will add the custom trait to the list
+                    addCustomTrait(customTrait);
+                    $(this).val(''); // clear the input
+                }
+            }
+        });
+        Sortable.create(document.getElementById('personality-traits'), {
+            animation: 150,
+        });
+        
+        updatePersonalityList();
+        updateScenarioList();
+        updateScenario();
+        updateDetails();
+        function resetDetails() {
+            $("#personality-traits").empty();
+            customTraits = [];
+        }
+        function resetDialogue() {
+            $("#dialogue-entries").empty(); 
+        }
+        function restetFirstMessage(){
+            $("#first-message").val("");
+        }
+        function resetPersonalities() {
+            $('.personality').prop('checked', false);
+            updatePersonalityList();
+            // Refresh again
+            updatePersonalityList(); 
+
+        }
+        function resetScenario() {
+            $("#scenario-description").val("");
+        }
+        function resetUI() {
+            resetDetails();
+            resetDialogue();
+            restetFirstMessage()
+            resetPersonalities();
+            resetScenario();
+            $("#toggle-nsfw").removeClass("show-nsfw");
+        }
+        //Reading PNG info
+        var loadedFile;
+        
+        document.getElementById('load').addEventListener('change', function(e) {
+            var img = new Image();
+            img.onload = draw;
+            img.onerror = failed;
+            if(this.files[0] == null) return;
+            img.src = URL.createObjectURL(this.files[0]);
+            
+
+            $("#toggle-nsfw").addClass("show-nsfw");
+            updatePersonalityList();
+
+            loadedFile = e.target.files[0];
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let data = Data.Parse(e.target.result);
+                if(data == null) return;
+                const character = JSON.parse(data);
+                
+
+                document.getElementById('name').value = character.name;
+                
+
+                const checkboxes = document.querySelectorAll('.personality');
+                var per = character.personality.replace("I am ", "").replace(" and ", ",").replace(" person", "");
+                per = per.replace(/\s/g, '');
+                var PERSONALITY = per.split(",");
+                checkboxes.forEach(checkbox => {
+                    if (PERSONALITY.includes(checkbox.id)) {
+                        checkbox.checked = true;
+                    }
+                });
+                updateDetails();
+                updatePersonalityList();
+                $("#scenario-description").val(character.scenario)
+                document.getElementById('first-message').value = character.first_mes;
+
+                
+                var sum = character.description.replace(/"/g, "");
+                var SUMMARY = sum.split(",");
+                SUMMARY.forEach(function(s) {
+                    if(/^\s/.test(s)) s = s.substring(1);
+                    loadCustomTrait(s);
+                });
+
+
+                const messages = character.mes_example;
+                const messageBlocks = messages.split("<START>");
+                const container = document.getElementById("dialogue-entries");  
+
+                let lastSpeaker = "You";
+                for (let block of messageBlocks) {
+                    // Create entry
+                    let entry = document.createElement("div");
+                    entry.classList.add("dialogue-entry");
+
+                    // Split lines
+                    let lines = block.trim().split(/\r?\n/);
+                    //Find Character Name
+                    let characterName = "";
+                    for (let line of lines) {
+                        if(!characterName) {
+                            if(line.split(":")[0] != "You") characterName = line.split(":")[0];
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // Add each line
+                    for (let line of lines) {
+                        if(!line.trim()) {
+                            continue;
+                        }
+
+                        let parts = line.split(":");
+                        let who = parts[0];
+                        lastSpeaker = who;
+                        let text = parts[1];
+
+                        // Add select with speaker  
+                        let select = document.createElement("select");
+                        select.classList.add("dialogue-who");
+
+                        // Add options
+                        let optionYou = document.createElement("option");
+                        optionYou.value = "You";
+                        optionYou.text = "You";
+
+                        let optionName = document.createElement("option");
+                        optionName.value = characterName;
+                        optionName.text = characterName;
+
+                        select.appendChild(optionName);
+                        select.appendChild(optionYou);
+
+                        if(lastSpeaker === "You") {
+                            select.selectedIndex = 1;
+                        } else {
+                            select.selectedIndex = 0;
+                        }
+
+                        
+                        // Add text input
+                        let input = document.createElement("input");
+                        input.type = "text";
+                        input.classList.add("dialogue-message");
+                        input.value = text;
+
+                        // Append elements
+                        entry.appendChild(select);
+                        entry.appendChild(input);
+
+                    }
+
+                    // Add entry to container
+                    container.appendChild(entry);
+                }
+
+            };
+            reader.readAsArrayBuffer(loadedFile);
+            updateDetails();
+            updatePersonalityList();
+            resetUI();
+            document.getElementById('save-png').style.display = 'inline-block';
+        });
+        function draw() {
+            var canvas = document.getElementById('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(this, 0, 0, this.width,    this.height,       // source rectangle
+                                0, 0, canvas.width, canvas.height);     // destination rectangle
+        }
+        function failed() {
+            console.error("The provided file couldn't be loaded as an Image media");
+        }
+        document.getElementById('save-png').addEventListener('click', function() {
+            var name = $("#name").val();
+            var traits = $("#personality-traits .trait-item").map(function() { return $(this).text().replace('[x]', '').trim(); }).get();
+            var scenario = $("#scenario-description").val();
+            var firstMessage = $("#first-message").val();
+            var dialogue = "";
+        
+            $(".dialogue-entry").each(function() {
+                dialogue += "<START>\n"; // Add "<START>\n" at the beginning of each dialogue
+                var whoElements = $(this).find(".dialogue-who");
+                var messageElements = $(this).find(".dialogue-message");
+                
+                for (var i = 0; i < whoElements.length; i++) {
+                    var who = whoElements[i].value === 'You' ? 'You' : name;
+                    var message = messageElements[i].value;
+                    
+                    if (message) {
+                        dialogue += who + ": " + message + "\n";
+                    }
+                }
+            });
+
+            const character = {
+                name: name,
+                description: traits.map(trait => `"${trait}"`).join(', '),
+                personality: getPersonalityDescription(),
+                scenario: scenario,
+                first_mes: firstMessage,
+                mes_example: dialogue
+            };
+            let text = JSON.stringify(character, null, 2);
+            
+            if (loadedFile) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    let encodedData = Data.Generate(e.target.result, text);
+                    // Download the encoded image
+                    let link = document.createElement('a');
+                    link.href = URL.createObjectURL(new Blob([encodedData], {type: 'image/png'}));
+                    link.download = name+'.png';
+                    link.click();
+                };
+                reader.readAsArrayBuffer(loadedFile);
+            } else {
+                // Download the data as a JSON file
+                let link = document.createElement('a');
+                link.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+                link.download = name+'.json';
+                link.click();
+            }
+        });
+        document.getElementById('save-json').addEventListener('click', function() {
+            var name = $("#name").val();
+            var traits = $("#personality-traits .trait-item").map(function() { return $(this).text().replace('[x]', '').trim(); }).get();
+            var scenario = $("#scenario-description").val();
+            var firstMessage = $("#first-message").val();
+            var dialogue = "";
+        
+            $(".dialogue-entry").each(function() {
+                dialogue += "<START>\n"; // Add "<START>\n" at the beginning of each dialogue
+                var whoElements = $(this).find(".dialogue-who");
+                var messageElements = $(this).find(".dialogue-message");
+                
+                for (var i = 0; i < whoElements.length; i++) {
+                    var who = whoElements[i].value === 'You' ? 'You' : name;
+                    var message = messageElements[i].value;
+                    
+                    if (message) {
+                        dialogue += who + ": " + message + "\n";
+                    }
+                }
+            });
+
+            const character = {
+                "name": name,
+                "description": traits.map(trait => `"${trait}"`).join(', '),
+                "personality": getPersonalityDescription(),
+                "scenario": scenario,
+                "first_mes": firstMessage,
+                "mes_example": dialogue
+            };
+            let text = JSON.stringify(character, null, 2);
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+            link.download = name+'.json';
+            link.click();
+        });
+
+        class Data {
+			static #uint8 = new Uint8Array(4);
+			static #int32 = new Int32Array(this.#uint8.buffer);
+			static #uint32 = new Uint32Array(this.#uint8.buffer);
+            static #readChunks(data) {
+                if (data[0] !== 0x89 || data[1] !== 0x50 || data[2] !== 0x4E || data[3] !== 0x47 || data[4] !== 0x0D || data[5] !== 0x0A || data[6] !== 0x1A || data[7] !== 0x0A) throw new PngFormatError('Invalid PNG header');
+                const chunks = [];
+                let idx = 8;
+                while (idx < data.length) {
+                    const chunk = Data.#readChunk(data, idx);
+
+                    if (!chunks.length && chunk.type !== 'IHDR') throw new PngDecodeError('PNG missing IHDR header');
+
+                    chunks.push(chunk);
+                    idx += 4 + 4 + chunk.data.length + 4;
+                }
+                if (chunks.length === 0) throw new PngDecodeError('PNG ended prematurely, no chunks');
+                if (chunks[chunks.length - 1].type !== 'IEND') throw new PngDecodeError('PNG ended prematurely, missing IEND header');
+                return chunks;
+            }
+            static #readChunk(data, idx) {
+				this.#uint8[3] = data[idx++];
+				this.#uint8[2] = data[idx++];
+				this.#uint8[1] = data[idx++];
+				this.#uint8[0] = data[idx++];
+				const length = this.#uint32[0];
+				const chunkType = String.fromCharCode(data[idx++]) + String.fromCharCode(data[idx++]) + String.fromCharCode(data[idx++]) + String.fromCharCode(data[idx++]);
+				const chunkData = data.slice(idx, idx + length);
+				idx += length;
+				this.#uint8[3] = data[idx++];
+				this.#uint8[2] = data[idx++];
+				this.#uint8[1] = data[idx++];
+				this.#uint8[0] = data[idx++];
+				const crc = this.#int32[0];
+				if (crc !== CRC32.buf(chunkData, CRC32.str(chunkType))) throw new PngDecodeError('CRC for "' + chunkType + '" header is invalid, file is likely corrupted');
+				return {
+					type: chunkType,
+					data: chunkData,
+					crc
+				};
+			}
+            static #decodeText(data) {
+                let naming = true;
+                let keyword = '';
+                let text = '';
+                for (let index = 0; index < data.length; index++) {
+                    const code = data[index];
+                    if (naming) {
+                        if (code) {
+                            keyword += String.fromCharCode(code);
+                        } else {
+                            naming = false;
+                        }
+                    } else {
+                        if (code) {
+                            text += String.fromCharCode(code);
+                        } else {
+                            throw new PngDecodeError('Invalid NULL character found in PNG tEXt chunk');
+                        }
+                    }
+                }
+                return {
+                    keyword,
+                    text
+                };
+            }
+            static #encodeText(keyword, text) {
+				keyword = String(keyword);
+				text = String(text);
+				if (!/^[\x00-\xFF]+$/.test(keyword) || !/^[\x00-\xFF]+$/.test(text)) throw new PngDecodeError('Invalid character in PNG tEXt chunk');
+				if (keyword.length > 79) throw new PngDecodeError('Keyword "' + keyword + '" is longer than the 79 character limit');
+				const data = new Uint8Array(keyword.length + text.length + 1);
+				let idx = 0;
+				let code;
+				for (let i = 0; i < keyword.length; i++) {
+					if (!(code = keyword.charCodeAt(i))) throw new PngDecodeError('0x00 character is not permitted in tEXt keywords');
+					data[idx++] = code;
+				}
+				data[idx++] = 0;
+				for (let i = 0; i < text.length; i++) {
+					if (!(code = text.charCodeAt(i))) throw new PngDecodeError('0x00 character is not permitted in tEXt text');
+					data[idx++] = code;
+				}
+				return data;
+			}
+            static #encodeChunks(chunks) {
+				const output = new Uint8Array(chunks.reduce((a, c) => a + 4 + 4 + c.data.length + 4, 8));
+				output[0] = 0x89;
+				output[1] = 0x50;
+				output[2] = 0x4E;
+				output[3] = 0x47;
+				output[4] = 0x0D;
+				output[5] = 0x0A;
+				output[6] = 0x1A;
+				output[7] = 0x0A;
+				let idx = 8;
+
+				chunks.forEach(c => {
+					this.#uint32[0] = c.data.length;
+					output[idx++] = this.#uint8[3];
+					output[idx++] = this.#uint8[2];
+					output[idx++] = this.#uint8[1];
+					output[idx++] = this.#uint8[0];
+					output[idx++] = c.type.charCodeAt(0);
+					output[idx++] = c.type.charCodeAt(1);
+					output[idx++] = c.type.charCodeAt(2);
+					output[idx++] = c.type.charCodeAt(3);
+					for (let i = 0; i < c.data.length;) {
+						output[idx++] = c.data[i++];
+					}
+					this.#int32[0] = c.crc || CRC32.buf(c.data, CRC32.str(c.type));
+					output[idx++] = this.#uint8[3];
+					output[idx++] = this.#uint8[2];
+					output[idx++] = this.#uint8[1];
+					output[idx++] = this.#uint8[0];
+				});
+
+				return output;
+			}
+            static Parse(arrayBuffer) {
+                const chunks = Data.#readChunks(new Uint8Array(arrayBuffer));
+
+                const text = chunks.filter(c => c.type === 'tEXt').map(c => Data.#decodeText(c.data));
+                if (text.length < 1) return;
+
+                const chara = text.find(t => t.keyword === 'chara');
+                if (chara === undefined) return;
+
+                try {
+                    return new TextDecoder().decode(Uint8Array.from(atob(chara.text), c => c.charCodeAt(0)));
+                } catch (e) {
+                    return;
+                }
+            }
+            static Generate(arrayBuffer, text) {
+				const chunks = Data.#readChunks(new Uint8Array(arrayBuffer)).filter(c => c.type !== 'tEXt');
+				chunks.splice(-1, 0, {
+					type: 'tEXt',
+					data: Data.#encodeText('chara', btoa(new TextEncoder().encode(text).reduce((a, c) => a + String.fromCharCode(c), '')))
+				});
+
+				return Data.#encodeChunks(chunks);
+			}
+        }
+    </script>
+
+</body>
+</html>
